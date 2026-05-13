@@ -1,0 +1,38 @@
+-- Logic Parameters
+local SETTINGS = {
+    ENABLED = true,
+    MAX_DISTANCE = 500, -- Maximum lock distance
+    WALL_CHECK = true,   -- Prevents locking through walls
+}
+
+local function getTarget()
+    local target = nil
+    local shortestDist = SETTINGS.MAX_DISTANCE
+
+    for _, obj in pairs(workspace.Enemies:GetChildren()) do
+        local head = obj:FindFirstChild("Head")
+        if head then
+            -- 1. Distance Calculation
+            local dist = (player.Character.HumanoidRootPart.Position - head.Position).Magnitude
+            
+            if dist < shortestDist then
+                -- 2. Raycast (Wall Check)
+                local isVisible = true
+                if SETTINGS.WALL_CHECK then
+                    local rayParams = RaycastParams.new()
+                    rayParams.FilterDescendantsInstances = {player.Character, obj}
+                    rayParams.FilterType = Enum.RaycastFilterType.Exclude
+                    
+                    local result = workspace:Raycast(camera.CFrame.Position, head.Position - camera.CFrame.Position, rayParams)
+                    if result then isVisible = false end -- Something is in the way
+                end
+
+                if isVisible then
+                    target = head
+                    shortestDist = dist
+                end
+            end
+        end
+    end
+    return target
+end
