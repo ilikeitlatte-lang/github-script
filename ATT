@@ -1,0 +1,85 @@
+-- บริการที่จำเป็น
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+local camera = workspace.CurrentCamera
+local mouse = player:GetMouse()
+
+-- ตัวแปรควบคุม
+local isLocked = false
+local targetTitan = nil
+local lockDistance = 500 -- ระยะสูงสุดที่ล็อคได้
+
+-- อ้างอิง UI
+local button = script.Parent
+
+-- ฟังก์ชันตรวจสอบว่ามองเห็นเป้าหมายหรือไม่ (ไม่ติดกำแพง)
+local function isVisible(targetPart)
+	local origin = camera.CFrame.p
+	local destination = targetPart.Position
+	local direction = destination - origin
+	
+	local raycastParams = RaycastParams.new()
+	raycastParams.FilterDescendantsInstances = {player.Character, targetPart.Parent} -- ไม่เช็คตัวเองและตัวไททันเอง
+	raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+	
+	local result = workspace:Raycast(origin, direction, raycastParams)
+	
+	if result then
+		-- ถ้ามีอะไรขวาง (เช่น กำแพง) จะส่งค่า false
+		return false
+	end
+	return true
+end
+
+-- ฟังก์ชันหา "ท้ายทอย" (Nape) ที่ใกล้ที่สุดและอยู่ในจอ
+local function getClosestNape()
+	local closestNape = nil
+	local shortestDistance = math.huge
+	
+	for _, obj in pairs(workspace:GetDescendants()) do
+		-- สมมติว่าจุดอ่อนไททันชื่อ "Nape" หรือ "Hitbox"
+		if obj.Name == "Nape" and obj:IsA("BasePart") then
+			local screenPos, onScreen = camera:WorldToViewportPoint(obj.Position)
+			
+			if onScreen and isVisible(obj) then
+				local distance = (player.Character.HumanoidRootPart.Position - obj.Position).Magnitude
+				if distance < shortestDistance and distance < lockDistance then
+					shortestDistance = distance
+					closestNape = obj
+				end
+			end
+		end
+	end
+	return closestNape
+end
+
+-- ระบบล็อคกล้อง
+RunService.RenderStepped:Connect(function()
+	if isLocked and targetTitan then
+		if targetTitan.Parent and isVisible(targetTitan) then
+			-- หมุนกล้องไปหาท้ายทอยไททันแบบสมูท
+			local targetCFrame = CFrame.new(camera.CFrame.Position, targetTitan.Position)
+			camera.CFrame = camera.CFrame:Lerp(targetCFrame, 0.15) -- 0.15 คือความเร็วในการหัน
+		else
+			-- ถ้าเป้าหมายหายไปหรือถูกกำแพงบัง ให้หลุดล็อค
+			targetTitan = nil
+		end
+	end
+end)
+
+-- ปุ่มเปิด/ปิด
+button.MouseButton1Click:Connect(function()
+	isLocked = not isLocked
+	if isLocked then
+		button.Text = "Lock: ON"
+		button.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+		targetTitan = getClosestNape()
+	else
+		button.Text = "Lock: OFF"
+		button.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+		targetTitan = nil
+	end
+end)
