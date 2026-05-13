@@ -1,4 +1,20 @@
 # actions/github-script
+-- ตัวอย่างการเช็กระยะและการมองเห็น (Raycast)
+local function canSeeTarget(playerCharacter, targetPart)
+    local origin = playerCharacter.PrimaryPart.Position
+    local direction = (targetPart.Position - origin).Unit * 100 -- ระยะ 100 studs
+    
+    local raycastParams = RaycastParams.new()
+    raycastParams.FilterDescendantsInstances = {playerCharacter}
+    raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+
+    local result = workspace:Raycast(origin, direction, raycastParams)
+
+    if result and result.Instance:IsDescendantOf(targetPart.Parent) then
+        return true -- มองเห็นเป้าหมายและไม่มีอะไรบัง
+    end
+    return false
+end
 
 [![Integration](https://github.com/actions/github-script/actions/workflows/integration.yml/badge.svg?branch=main&event=push)](https://github.com/actions/github-script/actions/workflows/integration.yml)
 [![CI](https://github.com/actions/github-script/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/actions/github-script/actions/workflows/ci.yml)
