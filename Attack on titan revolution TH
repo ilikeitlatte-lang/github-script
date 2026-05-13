@@ -1,0 +1,45 @@
+-- ตัวอย่าง Logic เบื้องต้นสำหรับการหาเป้าหมาย
+local UserInputService = game:GetService("UserInputService")
+local Players = game:GetService("Players")
+local localPlayer = Players.LocalPlayer
+local camera = workspace.CurrentCamera
+
+-- ตัวแปรตั้งค่า (UI Settings)
+local isEnabled = true
+local lockDistance = 500 -- ระยะการล็อค
+local wallCheck = true   -- ตรวจสอบกำแพง
+
+local function getClosestTitan()
+    local closestTarget = nil
+    local shortestDistance = lockDistance
+
+    for _, target in pairs(workspace:GetChildren()) do
+        -- ตรวจสอบว่าเป็น Titan และมีจุด Check (เช่น Head หรือ Neck)
+        if target:FindFirstChild("Head") and target:FindFirstChild("Humanoid") then
+            local rootPart = target.Head
+            local screenPos, onScreen = camera:WorldToViewportPoint(rootPart.Position)
+            
+            if onScreen then
+                local distance = (localPlayer.Character.HumanoidRootPart.Position - rootPart.Position).Magnitude
+                
+                if distance < shortestDistance then
+                    -- ตรวจสอบระยะสายตา (Wall Check)
+                    local canSee = true
+                    if wallCheck then
+                        local ray = Ray.new(camera.CFrame.Position, (rootPart.Position - camera.CFrame.Position).Unit * distance)
+                        local hit = workspace:FindPartOnRayWithIgnoreList(ray, {localPlayer.Character, target})
+                        if hit then canSee = false end
+                    end
+
+                    if canSee then
+                        closestTarget = rootPart
+                        shortestDistance = distance
+                    end
+                end
+            end
+        end
+    end
+    return closestTarget
+end
+
+-- การทำงานจะเชื่อมต่อกับ RenderStepped เพื่ออัปเดตหน้าจอ
