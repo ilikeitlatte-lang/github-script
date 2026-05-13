@@ -1,0 +1,112 @@
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Window = Rayfield:CreateWindow({
+   Name = "JJK Hub | Optimized",
+   LoadingTitle = "Cursed Technique Initializing",
+   LoadingSubtitle = "by Gemini",
+   ConfigurationSaving = {
+      Enabled = true,
+      FolderName = "JJK_Config",
+      FileName = "Main"
+   }
+})
+
+-- Variables
+local _G = {
+    AutoFarm = false,
+    AutoSkill = false,
+    Distance = 8,
+    TargetName = "NPC" -- Change this to the specific NPC name if needed
+}
+
+-- Main Tab
+local MainTab = Window:CreateTab("Combat", 4483362458)
+
+MainTab:CreateToggle({
+   Name = "Auto Farm (Closest)",
+   CurrentValue = false,
+   Flag = "FarmToggle",
+   Callback = function(Value)
+      _G.AutoFarm = Value
+   end,
+})
+
+MainTab:CreateSlider({
+   Name = "TP Distance",
+   Range = {0, 15},
+   Increment = 1,
+   Suffix = "Studs",
+   CurrentValue = 8,
+   Flag = "DistSlider",
+   Callback = function(Value)
+      _G.Distance = Value
+   end,
+})
+
+-- Skills Tab
+local SkillTab = Window:CreateTab("Skills", 4483362458)
+
+SkillTab:CreateToggle({
+   Name = "Auto Spam Skills (1-4)",
+   CurrentValue = false,
+   Flag = "SkillToggle",
+   Callback = function(Value)
+      _G.AutoSkill = Value
+   end,
+})
+
+-- Farm Logic
+task.spawn(function()
+    while task.wait() do
+        if _G.AutoFarm then
+            pcall(function()
+                local player = game.Players.LocalPlayer
+                local char = player.Character
+                local target = nil
+                local dist = math.huge
+                
+                -- Detect Closest Enemy
+                for _, v in pairs(workspace:GetDescendants()) do
+                    if v:IsA("Model") and v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") then
+                        if v.Name ~= player.Name and v.Humanoid.Health > 0 then
+                            local d = (char.HumanoidRootPart.Position - v.HumanoidRootPart.Position).Magnitude
+                            if d < dist then
+                                dist = d
+                                target = v
+                            end
+                        end
+                    end
+                end
+                
+                if target then
+                    -- Position behind the target
+                    char.HumanoidRootPart.CFrame = target.HumanoidRootPart.CFrame * CFrame.new(0, 0, _G.Distance)
+                    
+                    -- Click Attack
+                    game:GetService("VirtualUser"):CaptureController()
+                    game:GetService("VirtualUser"):ClickButton1(Vector2.new(0,0))
+                end
+            end)
+        end
+    end
+end)
+
+-- Skill Logic
+task.spawn(function()
+    local VIM = game:GetService("VirtualInputManager")
+    while task.wait(1) do
+        if _G.AutoSkill and _G.AutoFarm then
+            for i = 1, 4 do
+                VIM:SendKeyEvent(true, tostring(i), false, game)
+                task.wait(0.1)
+            end
+        end
+    end
+end)
+
+Rayfield:Notify({
+   Title = "Executed",
+   Content = "Script is ready. Use the toggle to start farming.",
+   Duration = 5,
+   Image = 4483362458,
+})
